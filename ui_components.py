@@ -63,6 +63,17 @@ def create_controls_container():
         height=40,
         width=140
     )
+    fast_en_us_btn = ft.ElevatedButton(
+        text="Fast EN-US (Live)",
+        bgcolor="#2d5a3d",
+        color="#ffffff",
+        style=ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=4),
+            elevation=3,
+        ),
+        height=40,
+        width=180
+    )
     
     refresh_btn = ft.ElevatedButton(
         text="🔄 Refresh",
@@ -74,6 +85,17 @@ def create_controls_container():
         ),
         height=40,
         width=100
+    )
+    revert_default_btn = ft.ElevatedButton(
+        text="Revert to Default",
+        bgcolor="#5a3d2d",
+        color="#ffffff",
+        style=ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=4),
+            elevation=3,
+        ),
+        height=40,
+        width=180
     )
     
     launch_game_btn = ft.ElevatedButton(
@@ -106,9 +128,11 @@ def create_controls_container():
             ft.Divider(color="#333333", height=1),
             ft.Row([
                 set_en_us_btn,
+                fast_en_us_btn,
             ], alignment=ft.MainAxisAlignment.CENTER),
             ft.Row([
                 refresh_btn,
+                revert_default_btn,
             ], alignment=ft.MainAxisAlignment.CENTER),
             ft.Row([
                 launch_game_btn,
@@ -124,6 +148,8 @@ def create_controls_container():
     # Return both the container and button references
     buttons = {
         'set_en_us_btn': set_en_us_btn,
+        'fast_en_us_btn': fast_en_us_btn,
+        'revert_default_btn': revert_default_btn,
         'refresh_btn': refresh_btn,
         'launch_game_btn': launch_game_btn,
         'offline_launch_btn': offline_launch_btn
@@ -133,18 +159,31 @@ def create_controls_container():
 
 def create_path_input_section():
     """Create the path input section with text field and browse button"""
+    label_text = ft.Text(
+        "Game Path",
+        size=12,
+        color="#ffffff",
+        weight=ft.FontWeight.BOLD
+    )
+    example_text = ft.Text(
+        "Example: C:\\Steam\\steamapps\\common\\Crossfire Legion\\Crossfire_Legion.exe",
+        size=11,
+        color="#aaaaaa",
+        selectable=True
+    )
     game_path_input = ft.TextField(
-        label="Game Path (e.g., C:\\Steam\\steamapps\\common\\Crossfire Legion\\Crossfire_Legion.exe)",
-        width=360,
+        label=None,
+        width=None,
+        expand=True,
         height=40,
-        border=ft.InputBorder.OUTLINE,
+        border=ft.InputBorder.UNDERLINE,
         border_radius=4,
         color="#ffffff",
-        bgcolor="#2d2d2d",
+        bgcolor="transparent",
         text_align=ft.TextAlign.LEFT,
         hint_text="Enter full path to Crossfire_Legion.exe"
     )
-    
+
     browse_btn = ft.ElevatedButton(
         text="📁 Browse",
         bgcolor="#2d5a4a",
@@ -154,17 +193,34 @@ def create_path_input_section():
             elevation=2,
         ),
         height=40,
-        width=100
+        width=110
     )
-    
-    # Create a container that extends to the bottom
-    return ft.Container(
-        content=ft.Row([
-            game_path_input,
-            browse_btn
-        ], alignment=ft.MainAxisAlignment.CENTER, spacing=10),
+    save_path_btn = ft.ElevatedButton(
+        text="💾 Save Path",
+        bgcolor="#2d5a3d",
+        color="#ffffff",
+        style=ft.ButtonStyle(
+            shape=ft.RoundedRectangleBorder(radius=4),
+            elevation=2,
+        ),
+        height=40,
+        width=120
+    )
+
+    # Return all controls for handler wiring
+    container = ft.Container(
+        content=ft.Column([
+            label_text,
+            example_text,
+            ft.Row([
+                game_path_input,
+                browse_btn,
+                save_path_btn
+            ], alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START, spacing=10)
+        ], spacing=6),
         padding=ft.padding.all(15),
         border=ft.border.all(1, "#333333"),
         border_radius=ft.border_radius.only(bottom_left=8, bottom_right=8),
         expand=True
     )
+    return container, browse_btn, save_path_btn, game_path_input

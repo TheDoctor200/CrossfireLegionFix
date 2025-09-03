@@ -1,31 +1,65 @@
 import flet as ft
 import os
 
-def setup_ui_handlers(page, rfc, status_text, status_container, path_input_section, buttons):
+def setup_ui_handlers(page, rfc, status_text, status_container, path_input_section, buttons, browse_button=None, save_button=None, path_input=None):
     """Setup all UI event handlers and state management"""
     
     # Get references to UI elements from the buttons dictionary
     set_en_us_btn = buttons['set_en_us_btn']
+    fast_en_us_btn = buttons['fast_en_us_btn']
     refresh_btn = buttons['refresh_btn']
+    revert_default_btn = buttons['revert_default_btn']
     launch_game_btn = buttons['launch_game_btn']
     offline_launch_btn = buttons['offline_launch_btn']
     
-    # Get references from the path input section container
-    path_row = path_input_section.content  # Get the Row from the Container
-    game_path_input = path_row.controls[0]  # Game path input field
-    browse_btn = path_row.controls[1]       # Browse button
-    
+    # If path controls are provided directly, use them; else fallback to extracting from container
+    if path_input and browse_button and save_button:
+        game_path_input = path_input
+        browse_btn = browse_button
+        save_path_btn = save_button
+    else:
+        # Fallback for legacy: extract from container
+        path_row = path_input_section.content  # Get the Column from the Container
+        row = path_row.controls[2]  # The Row is the third control in the Column
+        game_path_input = row.controls[0]
+        browse_btn = row.controls[1]
+        save_path_btn = row.controls[2]
+
     # Store references on page for access in handlers
     page.game_path_input = game_path_input
     page.rfc = rfc
     page.status_text = status_text
+
+    # Load saved game path if available
+    try:
+        saved_path = rfc.load_game_path()
+        if saved_path:
+            game_path_input.value = saved_path
+    except Exception:
+        pass
+
+    # Auto-save when user edits the path field
+    def on_game_path_changed(e):
+        try:
+            rfc.save_game_path(game_path_input.value or "")
+            status_text.value = "✅ Path saved"
+            status_text.color = "#4CAF50"
+            page.update()
+        except Exception as ex:
+            status_text.value = f"⚠️ Could not save path: {ex}"
+            status_text.color = "#ffa500"
+            page.update()
+    game_path_input.on_change = on_game_path_changed
     
     # Setup button click handlers
     set_en_us_btn.on_click = lambda e: on_set_en_us(e, page, rfc, status_text)
+    fast_en_us_btn.on_click = lambda e: on_fast_set_en_us(e, page, rfc, status_text, status_container, buttons)
     refresh_btn.on_click = lambda e: on_refresh(e, page, rfc, status_text, status_container, buttons)
+    revert_default_btn.on_click = lambda e: on_revert_default(e, page, rfc, status_text, status_container, buttons)
     launch_game_btn.on_click = lambda e: on_launch_game(e, page, rfc, status_text)
     offline_launch_btn.on_click = lambda e: on_launch_manual(e, page, rfc, status_text)
-    browse_btn.on_click = lambda e: browse_for_game_file(e, page, game_path_input, status_text)
+    browse_btn.on_click = lambda e: browse_for_game_file(e, page, game_path_input, status_text, rfc)
+    save_path_btn.on_click = lambda e: save_game_path_click(e, page, rfc, game_path_input, status_text)
 
 def on_set_en_us(e, page, rfc, status_text):
     """Handle setting locale to EN-US"""
@@ -43,6 +77,40 @@ def on_set_en_us(e, page, rfc, status_text):
 
     page.update()
     page.run_task(delayed_update, page, status_text)
+
+def on_fast_set_en_us(e, page, rfc, status_text, status_container, buttons):
+    """Quickly apply EN-US regional format via registry and broadcast."""
+    status_text.value = "⚡ Applying EN-US regional format..."
+    status_text.color = "#ffa500"
+    page.update()
+
+    success, message = rfc.apply_locale_quick("en-US")
+    if success:
+        status_text.value = f"✅ {message}"
+        status_text.color = "#4CAF50"
+    else:
+        status_text.value = f"❌ {message}"
+        status_text.color = "#f44336"
+
+    update_status(page, rfc, status_container, buttons)
+    page.update()
+
+def on_revert_default(e, page, rfc, status_text, status_container, buttons):
+    """Revert regional format to saved default from config."""
+    status_text.value = "↩️ Reverting to default regional format..."
+    status_text.color = "#ffa500"
+    page.update()
+
+    success, message = rfc.revert_to_default_quick()
+    if success:
+        status_text.value = f"✅ {message}"
+        status_text.color = "#4CAF50"
+    else:
+        status_text.value = f"❌ {message}"
+        status_text.color = "#f44336"
+
+    update_status(page, rfc, status_container, buttons)
+    page.update()
 
 def on_refresh(e, page, rfc, status_text, status_container, buttons):
     """Handle manual refresh"""
@@ -96,38 +164,99 @@ def on_launch_manual(e, page, rfc, status_text):
     page.update()
     page.run_task(delayed_update, page, status_text)
 
-def browse_for_game_file(e, page, game_path_input, status_text):
+def browse_for_game_file(e, page, game_path_input, status_text, rfc):
     """Open a file dialog to select a game executable."""
     try:
-        # Create a file picker dialog
-        file_picker = ft.FilePicker(
-            on_result=lambda e: handle_file_picker_result(e, page, game_path_input)
-        )
-        page.overlay.append(file_picker)
-        page.update()
-        
-        # Open the file picker
-        file_picker.pick_files(
-            allowed_extensions=["exe"],
-            initial_directory=os.path.dirname(game_path_input.value) if game_path_input.value else "C:\\"
-        )
+        # Reuse a persistent file picker attached to page
+        if not hasattr(page, "file_picker") or page.file_picker is None:
+            try:
+                page.file_picker = ft.FilePicker(
+                    on_result=lambda res: handle_file_picker_result(res, page, game_path_input, rfc)
+                )
+                page.overlay.append(page.file_picker)
+                page.update()
+            except Exception:
+                page.file_picker = None
+
+        # Open the file picker (ANY type for wider compatibility)
+        try:
+            if page.file_picker:
+                page.file_picker.pick_files(
+                    allow_multiple=False,
+                    # Use filter by extension if ANY is not supported in this version
+                    allowed_extensions=["exe"],
+                    initial_directory=(os.path.dirname(game_path_input.value) if game_path_input.value else "C:\\")
+                )
+            else:
+                # Fallback: use dialog via pick_files on a temporary picker
+                temp_picker = ft.FilePicker(
+                    on_result=lambda res: handle_file_picker_result(res, page, game_path_input, rfc)
+                )
+                page.overlay.append(temp_picker)
+                page.update()
+                temp_picker.pick_files(allow_multiple=False, allowed_extensions=["exe"], initial_directory="C:\\")
+        except Exception as ex:
+            status_text.value = f"❌ Browse not supported: {ex}"
+            status_text.color = "#f44336"
+            page.update()
+            # Fallback using tkinter
+            try:
+                import tkinter as tk
+                from tkinter import filedialog
+                root = tk.Tk()
+                root.withdraw()
+                file_path = filedialog.askopenfilename(title="Select Crossfire_Legion.exe", initialdir="C:/", filetypes=[("Executable", "*.exe"), ("All files", "*.*")])
+                root.update()
+                root.destroy()
+                if file_path:
+                    game_path_input.value = file_path
+                    try:
+                        rfc.save_game_path(file_path)
+                        status_text.value = "✅ Path saved"
+                        status_text.color = "#4CAF50"
+                    except Exception:
+                        status_text.value = "⚠️ Could not save path"
+                        status_text.color = "#ffa500"
+                    page.update()
+            except Exception:
+                pass
         
     except Exception as e:
         status_text.value = f"❌ Browse error: {e}"
         status_text.color = "#f44336"
         page.update()
 
-def handle_file_picker_result(e, page, game_path_input):
+def handle_file_picker_result(e, page, game_path_input, rfc):
     """Handle the result from file picker"""
     if e.files:
         selected_file = e.files[0].path
-        game_path_input.value = selected_file
+        if not selected_file.lower().endswith(".exe"):
+            page.status_text.value = "❌ Please select a .exe file"
+            page.status_text.color = "#f44336"
+        else:
+            game_path_input.value = selected_file
+            try:
+                rfc.save_game_path(selected_file)
+                page.status_text.value = "✅ Path saved"
+                page.status_text.color = "#4CAF50"
+            except Exception:
+                page.status_text.value = "⚠️ Could not save path, will still use it now"
+                page.status_text.color = "#ffa500"
         page.update()
     
     # Remove the file picker from overlay
-    if page.overlay:
-        page.overlay.pop()
-        page.update()
+    # Keep picker in overlay for reuse; do not pop
+
+def save_game_path_click(e, page, rfc, input_ctrl, status_text):
+    """Explicitly save the current input value to config."""
+    try:
+        rfc.save_game_path(input_ctrl.value or "")
+        status_text.value = "✅ Path saved"
+        status_text.color = "#4CAF50"
+    except Exception as ex:
+        status_text.value = f"⚠️ Could not save path: {ex}"
+        status_text.color = "#ffa500"
+    page.update()
 
 async def delayed_update(page, status_text):
     """Delayed status update"""
@@ -155,13 +284,36 @@ def update_status(page, rfc, status_container, buttons):
     
     # Update button states using the buttons dictionary
     set_en_us_btn = buttons['set_en_us_btn']
-    if current_locale.lower() == "en-us":
+    fast_en_us_btn = buttons.get('fast_en_us_btn')
+    revert_default_btn = buttons.get('revert_default_btn')
+
+    is_en_us = current_locale.lower() == "en-us"
+    if is_en_us:
         set_en_us_btn.disabled = True
         set_en_us_btn.text = "✓ Already EN-US"
         set_en_us_btn.bgcolor = "#1a4d3a"
+        if fast_en_us_btn:
+            fast_en_us_btn.disabled = True
+            fast_en_us_btn.text = "✓ Already EN-US"
+            fast_en_us_btn.bgcolor = "#1a4d3a"
     else:
         set_en_us_btn.disabled = False
         set_en_us_btn.text = "Set to EN-US"
         set_en_us_btn.bgcolor = "#2d5a3d"
+        if fast_en_us_btn:
+            fast_en_us_btn.disabled = False
+            fast_en_us_btn.text = "Fast EN-US (Live)"
+            fast_en_us_btn.bgcolor = "#2d5a3d"
+
+    # Revert button state
+    if revert_default_btn:
+        if rfc.default_locale and current_locale.lower() == str(rfc.default_locale).lower():
+            revert_default_btn.disabled = True
+            revert_default_btn.text = "✓ Already Default"
+            revert_default_btn.bgcolor = "#4d3a1a"
+        else:
+            revert_default_btn.disabled = False
+            revert_default_btn.text = "Revert to Default"
+            revert_default_btn.bgcolor = "#5a3d2d"
     
     page.update()

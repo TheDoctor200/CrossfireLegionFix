@@ -57,8 +57,9 @@ def main(page: ft.Page):
     header = create_header()
     status_container = create_status_container(current_locale, rfc.default_locale)
     controls_container, buttons = create_controls_container()
-    path_input_section = create_path_input_section()
-    
+    # Unpack path input section for button wiring
+    path_input_section, browse_button, save_button, path_input = create_path_input_section()
+
     # Status text for operations feedback
     status_text = ft.Text(
         "Ready for operations",
@@ -73,19 +74,27 @@ def main(page: ft.Page):
         content=ft.Column([
             header,
             status_container,
+            status_text,
             controls_container,
             path_input_section
         ], spacing=0),
         expand=True
     )
-    
+
     # Add to page
     page.add(main_container)
-    
-    # Setup UI handlers and state management
-    setup_ui_handlers(page, rfc, status_text, status_container, path_input_section, buttons)
-    
+
+    # Setup UI handlers and state management, now passing browse/save/path_input
+    setup_ui_handlers(
+        page, rfc, status_text, status_container, path_input_section, buttons,
+        browse_button=browse_button, save_button=save_button, path_input=path_input
+    )
+
     # Initial status update
+    update_status(page, rfc, status_container, buttons)
+
+if __name__ == "__main__":
+    ft.app(target=main, view=ft.AppView.FLET_APP)
     update_status(page, rfc, status_container, buttons)
 
 if __name__ == "__main__":
