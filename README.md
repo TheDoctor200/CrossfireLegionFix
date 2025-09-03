@@ -9,7 +9,7 @@ This guide helps you fix the notorious "speed bug" in Crossfire Legion, making y
 
 ## 🚩 What is this?
 
-This launcher assists you in quickly setting the correct Windows regional settings to fix the game's speed bug.  
+This launcher (FLET GUI) assists you in quickly setting the correct Windows regional settings to fix the game's speed bug.  
 You can do this manually, but the launcher automates the process for convenience.
 
 ---
@@ -111,4 +111,8 @@ C:\Users\<YourName>\AppData\LocalLow\Blackbird Interactive\Crossfire Legion\Play
 
 ## 🙏 Thanks
 
-Thanks to the Crossfire Legion community for sharing fixes and troubleshooting tips, feel free to share them!
+Thanks to the Crossfire Legion community for sharing fixes and troubleshooting tips, feel free to share this shorted guide!
+
+## ☕ Support me, my hard work and future development:
+Crypto Wallet Address: `0xfbe3E2337e7bCfC9245f0C2eAeF16597f0Bb2Dc2` (ETH)  
+Crypto Wallet Address: `0x4338665CBB7B2485A8855A139b75D5e34AB0DB94` (LTC)
