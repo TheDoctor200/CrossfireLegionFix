@@ -97,7 +97,7 @@ C:\Users\<YourName>\AppData\LocalLow\Blackbird Interactive\Crossfire Legion\Play
   -force-d3d11, -force-d3d12, -force-vulkan, -force-opengl, -force-gfx-st, -fps 60, -maxFrameRate 60
   -force-gfx-direct, -disable-gfx-jobs, -force-glcore, -force-clamped
   ```
-- **Confirmed:**  
+- **AfTER ALL THIS ITS CONFIRMED:**  
   - The bug is not tied to graphics drivers or render methods. However the bug is fixable with the Source Code.
 
 ---
