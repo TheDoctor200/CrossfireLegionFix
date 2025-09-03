@@ -68,6 +68,10 @@ If you still experience the speed bug, try adjusting number formatting directly:
 
 ---
 
+If nothing helps, consider running the game on a Linux distribution (such as Pop!_OS) via Steam/Proton as a workaround.
+
+---
+
 ## 🔍 Log Files
 
 Game logs are located at:  
