@@ -9,7 +9,7 @@ This guide helps you fix the notorious "speed bug" in Crossfire Legion, making y
 
 ## 🚩 What is this?
 
-This launcher assists you in quickly setting the correct Windows regional settings to fix the game's speed bug.  
+This launcher (FLET GUI) assists you in quickly setting the correct Windows regional settings to fix the game's speed bug.  
 You can do this manually, but the launcher automates the process for convenience.
 
 ---
