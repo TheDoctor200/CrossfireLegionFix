@@ -3,7 +3,7 @@
 ![Crossfire Legion Banner](https://cdn.cloudflare.steamstatic.com/steam/apps/1072190/header.jpg)
 
 Welcome to the **Crossfire Legion Launcher Troubleshooting Guide**!  
-This guide helps you fix the notorious "speed bug" in Crossfire Legion, making your game playable again.
+This guide helps you fix the notorious "speed bug" in Crossfire Legion, making your game playable again. WARNING: RESPECT THE COOLDOWN FOR FAST CHANGE! Redownload English US pack immidiatly if removed.
 
 ---
 

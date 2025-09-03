@@ -260,12 +260,12 @@ async def delayed_update(page, status_text):
     page.update()
 
 async def button_cooldown(page, buttons, duration, rfc, status_container):
-    """Disables buttons for a duration, then re-enables them by refreshing status."""
+    """Disables fast change buttons for a duration, then re-enables them by refreshing status."""
     fast_btn = buttons['fast_en_us_btn']
     revert_btn = buttons['revert_default_btn']
     
-    original_fast_text = fast_btn.text
-    original_revert_text = revert_btn.text
+    original_fast_text = "Fast EN-US (Live)"
+    original_revert_text = "Revert to Default"
 
     fast_btn.disabled = True
     revert_btn.disabled = True
@@ -305,30 +305,24 @@ def update_status(page, rfc, status_container, buttons):
 
     is_en_us = current_locale.lower() == "en-us"
     
-    # Do not change button state if it's in cooldown
-    if fast_en_us_btn and fast_en_us_btn.text.startswith("Cooldown"):
-        page.update()
-        return
+    # "Set to EN-US" button is always clickable
+    set_en_us_btn.disabled = False
+    set_en_us_btn.text = "Set to EN-US"
+    set_en_us_btn.bgcolor = "#2d5a3d"
 
-    if is_en_us:
-        set_en_us_btn.disabled = True
-        set_en_us_btn.text = "✓ Already EN-US"
-        set_en_us_btn.bgcolor = "#1a4d3a"
-        if fast_en_us_btn:
+    # Handle fast change buttons, respecting cooldown
+    if fast_en_us_btn and not fast_en_us_btn.text.startswith("Cooldown"):
+        if is_en_us:
             fast_en_us_btn.disabled = True
             fast_en_us_btn.text = "✓ Already EN-US"
             fast_en_us_btn.bgcolor = "#1a4d3a"
-    else:
-        set_en_us_btn.disabled = False
-        set_en_us_btn.text = "Set to EN-US"
-        set_en_us_btn.bgcolor = "#2d5a3d"
-        if fast_en_us_btn:
+        else:
             fast_en_us_btn.disabled = False
             fast_en_us_btn.text = "Fast EN-US (Live)"
             fast_en_us_btn.bgcolor = "#2d5a3d"
 
-    # Revert button state
-    if revert_default_btn:
+    # Revert button state, respecting cooldown
+    if revert_default_btn and not revert_default_btn.text.startswith("Cooldown"):
         if rfc.default_locale and current_locale.lower() == str(rfc.default_locale).lower():
             revert_default_btn.disabled = True
             revert_default_btn.text = "✓ Already Default"
@@ -339,3 +333,4 @@ def update_status(page, rfc, status_container, buttons):
             revert_default_btn.bgcolor = "#5a3d2d"
     
     page.update()
+
