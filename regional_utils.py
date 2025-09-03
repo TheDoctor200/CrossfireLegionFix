@@ -16,9 +16,10 @@ def is_admin():
 
 if __name__ == "__main__":
     if not is_admin():
-        # Relaunch as admin
+        # Relaunch as admin, hide console window
+        SW_HIDE = 0
         ctypes.windll.shell32.ShellExecuteW(
-            None, "runas", sys.executable, " ".join([f'"{arg}"' for arg in sys.argv]), None, 1
+            None, "runas", sys.executable, " ".join([f'"{arg}"' for arg in sys.argv]), None, SW_HIDE
         )
         sys.exit(0)
 # --- END ADMIN CHECK ---
@@ -124,8 +125,11 @@ class RegionalFormatChanger:
     def set_locale_to_en_us(self):
         """Open Windows Settings to Region page for user to set EN-US live"""
         try:
-            # Open Windows Settings to Region page
-            os.system('start ms-settings:regionlanguage')
+            # Hide console window when opening settings
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = 0  # SW_HIDE
+            subprocess.Popen('start ms-settings:regionlanguage', shell=True, startupinfo=si)
             return True
         except Exception as e:
             print(f"Error opening Settings: {e}")
@@ -202,8 +206,11 @@ class RegionalFormatChanger:
                     f"$list.Add('{culture}'); "
                     "Set-WinUserLanguageList -LanguageList $list -Force | Out-Null"
                 )
-                subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
-                               capture_output=True, text=True, shell=True, timeout=60)
+                subprocess.run(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
+                    capture_output=True, text=True, shell=True, timeout=60,
+                    startupinfo=self._get_hidden_startupinfo()
+                )
             except Exception:
                 # Best-effort; ignore failures here
                 pass
@@ -309,10 +316,13 @@ class RegionalFormatChanger:
                     pass
             
             if steam_path:
-                # Try launching via Steam
+                # Try launching via Steam, hide console window
                 steam_exe = os.path.join(steam_path, "Steam.exe")
                 if os.path.exists(steam_exe):
-                    subprocess.Popen([steam_exe, "-applaunch", "1072190"], shell=True)
+                    si = subprocess.STARTUPINFO()
+                    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    si.wShowWindow = 0  # SW_HIDE
+                    subprocess.Popen([steam_exe, "-applaunch", "1072190"], shell=True, startupinfo=si)
                     return True, "Launching via Steam..."
                 else:
                     return False, "Steam executable not found"
@@ -327,22 +337,31 @@ class RegionalFormatChanger:
         try:
             if not game_path or not os.path.exists(game_path):
                 return False, "Invalid game path specified"
-            
-            # Check if it's the correct executable
             if not game_path.lower().endswith('crossfire_legion.exe'):
                 return False, "Path must point to Crossfire_Legion.exe"
-            
-            # Launch the game with proper working directory to avoid black screen
             exe_dir = os.path.dirname(game_path)
             try:
                 DETACHED_PROCESS = 0x00000008
-                subprocess.Popen([game_path], cwd=exe_dir, shell=False, creationflags=DETACHED_PROCESS)
+                CREATE_NO_WINDOW = 0x08000000
+                subprocess.Popen(
+                    [game_path], cwd=exe_dir, shell=False,
+                    creationflags=DETACHED_PROCESS | CREATE_NO_WINDOW
+                )
             except Exception:
-                # Fallback via PowerShell Start-Process with WorkingDirectory
-                ps_cmd = f"Start-Process -FilePath \"{game_path}\" -WorkingDirectory \"{exe_dir}\""
-                subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
-                               capture_output=True, text=True, shell=True, timeout=15)
+                # Fallback via PowerShell Start-Process with WorkingDirectory, hide window
+                ps_cmd = f"Start-Process -FilePath \"{game_path}\" -WorkingDirectory \"{exe_dir}\" -WindowStyle Hidden"
+                subprocess.run(
+                    ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps_cmd],
+                    capture_output=True, text=True, shell=True, timeout=15,
+                    startupinfo=self._get_hidden_startupinfo()
+                )
             return True, f"Game launched from: {os.path.dirname(game_path)}"
-                
         except Exception as e:
             return False, f"Error launching game: {e}"
+
+    def _get_hidden_startupinfo(self):
+        """Helper to get a STARTUPINFO object with hidden window for subprocess."""
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = 0  # SW_HIDE
+        return si

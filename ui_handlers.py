@@ -317,3 +317,5 @@ def update_status(page, rfc, status_container, buttons):
             revert_default_btn.bgcolor = "#5a3d2d"
     
     page.update()
+    
+    page.update()

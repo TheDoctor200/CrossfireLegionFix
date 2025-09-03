@@ -95,7 +95,3 @@ def main(page: ft.Page):
 
 if __name__ == "__main__":
     ft.app(target=main, view=ft.AppView.FLET_APP)
-    update_status(page, rfc, status_container, buttons)
-
-if __name__ == "__main__":
-    ft.app(target=main, view=ft.AppView.FLET_APP)
