@@ -108,3 +108,7 @@ C:\Users\<YourName>\AppData\LocalLow\Blackbird Interactive\Crossfire Legion\Play
 ## 🙏 Thanks
 
 Thanks to the Crossfire Legion community for sharing fixes and troubleshooting tips, feel free to share them!
+
+## ☕ Support me, my hard work and future development:
+Crypto Wallet Address: `0xfbe3E2337e7bCfC9245f0C2eAeF16597f0Bb2Dc2` (ETH)  
+Crypto Wallet Address: `0x4338665CBB7B2485A8855A139b75D5e34AB0DB94` (LTC)
