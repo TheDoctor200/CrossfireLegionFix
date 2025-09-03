@@ -1,7 +1,8 @@
 import flet as ft
 import os
+import asyncio
 
-def setup_ui_handlers(page, rfc, status_text, status_container, path_input_section, buttons, browse_button=None, save_button=None, path_input=None):
+def setup_ui_handlers(page, rfc, status_text, status_container, path_input_section, buttons, browse_button=None, path_input=None):
     """Setup all UI event handlers and state management"""
     
     # Get references to UI elements from the buttons dictionary
@@ -13,17 +14,15 @@ def setup_ui_handlers(page, rfc, status_text, status_container, path_input_secti
     offline_launch_btn = buttons['offline_launch_btn']
     
     # If path controls are provided directly, use them; else fallback to extracting from container
-    if path_input and browse_button and save_button:
+    if path_input and browse_button:
         game_path_input = path_input
         browse_btn = browse_button
-        save_path_btn = save_button
     else:
         # Fallback for legacy: extract from container
         path_row = path_input_section.content  # Get the Column from the Container
         row = path_row.controls[2]  # The Row is the third control in the Column
         game_path_input = row.controls[0]
         browse_btn = row.controls[1]
-        save_path_btn = row.controls[2]
 
     # Store references on page for access in handlers
     page.game_path_input = game_path_input
@@ -59,7 +58,6 @@ def setup_ui_handlers(page, rfc, status_text, status_container, path_input_secti
     launch_game_btn.on_click = lambda e: on_launch_game(e, page, rfc, status_text)
     offline_launch_btn.on_click = lambda e: on_launch_manual(e, page, rfc, status_text)
     browse_btn.on_click = lambda e: browse_for_game_file(e, page, game_path_input, status_text, rfc)
-    save_path_btn.on_click = lambda e: save_game_path_click(e, page, rfc, game_path_input, status_text)
 
 def on_set_en_us(e, page, rfc, status_text):
     """Handle setting locale to EN-US"""
@@ -80,6 +78,8 @@ def on_set_en_us(e, page, rfc, status_text):
 
 def on_fast_set_en_us(e, page, rfc, status_text, status_container, buttons):
     """Quickly apply EN-US regional format via registry and broadcast."""
+    buttons['fast_en_us_btn'].disabled = True
+    buttons['revert_default_btn'].disabled = True
     status_text.value = "⚡ Applying EN-US regional format..."
     status_text.color = "#ffa500"
     page.update()
@@ -94,9 +94,12 @@ def on_fast_set_en_us(e, page, rfc, status_text, status_container, buttons):
 
     update_status(page, rfc, status_container, buttons)
     page.update()
+    page.run_task(button_cooldown, page, buttons, 15, rfc, status_container)
 
 def on_revert_default(e, page, rfc, status_text, status_container, buttons):
     """Revert regional format to saved default from config."""
+    buttons['fast_en_us_btn'].disabled = True
+    buttons['revert_default_btn'].disabled = True
     status_text.value = "↩️ Reverting to default regional format..."
     status_text.color = "#ffa500"
     page.update()
@@ -111,6 +114,7 @@ def on_revert_default(e, page, rfc, status_text, status_container, buttons):
 
     update_status(page, rfc, status_container, buttons)
     page.update()
+    page.run_task(button_cooldown, page, buttons, 15, rfc, status_container)
 
 def on_refresh(e, page, rfc, status_text, status_container, buttons):
     """Handle manual refresh"""
@@ -247,23 +251,35 @@ def handle_file_picker_result(e, page, game_path_input, rfc):
     # Remove the file picker from overlay
     # Keep picker in overlay for reuse; do not pop
 
-def save_game_path_click(e, page, rfc, input_ctrl, status_text):
-    """Explicitly save the current input value to config."""
-    try:
-        rfc.save_game_path(input_ctrl.value or "")
-        status_text.value = "✅ Path saved"
-        status_text.color = "#4CAF50"
-    except Exception as ex:
-        status_text.value = f"⚠️ Could not save path: {ex}"
-        status_text.color = "#ffa500"
-    page.update()
-
 async def delayed_update(page, status_text):
     """Delayed status update"""
     import asyncio
-    await asyncio.sleep(1)
+    await asyncio.sleep(3)
     status_text.value = "Ready for operations"
     status_text.color = "#ffffff"
+    page.update()
+
+async def button_cooldown(page, buttons, duration, rfc, status_container):
+    """Disables buttons for a duration, then re-enables them by refreshing status."""
+    fast_btn = buttons['fast_en_us_btn']
+    revert_btn = buttons['revert_default_btn']
+    
+    original_fast_text = fast_btn.text
+    original_revert_text = revert_btn.text
+
+    fast_btn.disabled = True
+    revert_btn.disabled = True
+
+    for i in range(duration, 0, -1):
+        cooldown_text = f"Cooldown ({i}s)"
+        fast_btn.text = cooldown_text
+        revert_btn.text = cooldown_text
+        page.update()
+        await asyncio.sleep(1)
+    
+    fast_btn.text = original_fast_text
+    revert_btn.text = original_revert_text
+    update_status(page, rfc, status_container, buttons)
     page.update()
 
 def update_status(page, rfc, status_container, buttons):
@@ -288,6 +304,12 @@ def update_status(page, rfc, status_container, buttons):
     revert_default_btn = buttons.get('revert_default_btn')
 
     is_en_us = current_locale.lower() == "en-us"
+    
+    # Do not change button state if it's in cooldown
+    if fast_en_us_btn and fast_en_us_btn.text.startswith("Cooldown"):
+        page.update()
+        return
+
     if is_en_us:
         set_en_us_btn.disabled = True
         set_en_us_btn.text = "✓ Already EN-US"
@@ -315,7 +337,5 @@ def update_status(page, rfc, status_container, buttons):
             revert_default_btn.disabled = False
             revert_default_btn.text = "Revert to Default"
             revert_default_btn.bgcolor = "#5a3d2d"
-    
-    page.update()
     
     page.update()

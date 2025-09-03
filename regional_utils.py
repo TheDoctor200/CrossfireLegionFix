@@ -178,7 +178,7 @@ class RegionalFormatChanger:
             self._broadcast_setting_change()
 
             # Short delay to let Windows apply changes
-            time.sleep(0.3)
+            time.sleep(1)
 
             # Verify with simple retry
             for _ in range(5):
@@ -189,7 +189,7 @@ class RegionalFormatChanger:
                             break
                 except Exception:
                     pass
-                time.sleep(0.4)
+                time.sleep(1)
 
             # Also try using PowerShell to set culture and language list for broader coverage
             try:
@@ -216,7 +216,7 @@ class RegionalFormatChanger:
                 pass
 
             # Final delay to stabilize
-            time.sleep(0.5)
+            time.sleep(1)
 
             # Update in-memory current locale
             self.current_locale = locale_name

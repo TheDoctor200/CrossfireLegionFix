@@ -58,7 +58,7 @@ def main(page: ft.Page):
     status_container = create_status_container(current_locale, rfc.default_locale)
     controls_container, buttons = create_controls_container()
     # Unpack path input section for button wiring
-    path_input_section, browse_button, save_button, path_input = create_path_input_section()
+    path_input_section, browse_button, path_input = create_path_input_section()
 
     # Status text for operations feedback
     status_text = ft.Text(
@@ -84,10 +84,10 @@ def main(page: ft.Page):
     # Add to page
     page.add(main_container)
 
-    # Setup UI handlers and state management, now passing browse/save/path_input
+    # Setup UI handlers and state management, now passing browse/path_input
     setup_ui_handlers(
         page, rfc, status_text, status_container, path_input_section, buttons,
-        browse_button=browse_button, save_button=save_button, path_input=path_input
+        browse_button=browse_button, path_input=path_input
     )
 
     # Initial status update

@@ -195,27 +195,14 @@ def create_path_input_section():
         height=40,
         width=110
     )
-    save_path_btn = ft.ElevatedButton(
-        text="💾 Save Path",
-        bgcolor="#2d5a3d",
-        color="#ffffff",
-        style=ft.ButtonStyle(
-            shape=ft.RoundedRectangleBorder(radius=4),
-            elevation=2,
-        ),
-        height=40,
-        width=120
-    )
 
-    # Return all controls for handler wiring
     container = ft.Container(
         content=ft.Column([
             label_text,
             example_text,
             ft.Row([
                 game_path_input,
-                browse_btn,
-                save_path_btn
+                browse_btn
             ], alignment=ft.MainAxisAlignment.CENTER, vertical_alignment=ft.CrossAxisAlignment.START, spacing=10)
         ], spacing=6),
         padding=ft.padding.all(15),
@@ -223,4 +210,5 @@ def create_path_input_section():
         border_radius=ft.border_radius.only(bottom_left=8, bottom_right=8),
         expand=True
     )
-    return container, browse_btn, save_path_btn, game_path_input
+    return container, browse_btn, game_path_input
+
